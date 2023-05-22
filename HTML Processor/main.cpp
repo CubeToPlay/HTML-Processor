@@ -21,7 +21,7 @@ void read_line(ifstream& file, char* char_array, string &container)
 	container = parse(char_array, "=\"", "\"");
 }
 
-void manage_directory(string& file_template, string& container, string& output_location)
+void manage_directory(string& file_template, string& container, string& output_location, string& extension)
 {
 	for (const auto& origin_file_entry : fs::directory_iterator(container))
 	{
@@ -30,36 +30,57 @@ void manage_directory(string& file_template, string& container, string& output_l
 			string origin_file_path = origin_file_entry.path().string();
 
 			int first = origin_file_path.find_last_of("\\") + 1;
-			int last = origin_file_path.find_last_of(".txt") - 3;
+			int last = origin_file_path.find(extension);
 
-			fs::path output_path = fs::path(output_location) / (origin_file_path.substr(first, last - first) + ".html");
-			std::cout << output_path << std::endl;
-
-			ifstream  template_source_file(file_template, std::ios::binary);
-			ofstream  destination_file(output_path, std::ios::binary);
-
-			fstream origin_file(origin_file_path);
-				
-			stringstream buffer;
-			buffer << origin_file.rdbuf();
-			string origin_file_contents = buffer.str();
-
-			buffer.str("");
-			buffer << template_source_file.rdbuf();
-
-			string template_source_file_contents = buffer.str();
-			int index = template_source_file_contents.find("@body");
-
-			if (index != -1)
+			if (last != -1)
 			{
-				template_source_file_contents.replace(index, 5, origin_file_contents);
+				fs::path output_path = fs::path(output_location) / (origin_file_path.substr(first, last - first) + ".html");
+				std::cout << output_path << std::endl;
+
+				ifstream  template_source_file(file_template, std::ios::binary);
+				ofstream  destination_file(output_path, std::ios::binary);
+
+				fstream origin_file(origin_file_path);
+
+				stringstream buffer;
+				buffer << origin_file.rdbuf();
+				string origin_file_contents = buffer.str();
+
+				buffer.str("");
+				buffer << template_source_file.rdbuf();
+
+				string template_source_file_contents = buffer.str();
+
+				int index;
+
+				first = origin_file_contents.find("@title{") + 7;
+				last = origin_file_contents.find("}@title");
+				if (first != -1 && last != -1)
+				{
+					index = template_source_file_contents.find("@title");
+					if (index != -1)
+					{
+						template_source_file_contents.replace(index, 6, origin_file_contents.substr(first, last - first));
+					}
+				}
+
+				first = origin_file_contents.find("@body{") + 6;
+				last = origin_file_contents.find("}@body");
+				if (first != -1 && last != -1)
+				{
+					index = template_source_file_contents.find("@body");
+					if (index != -1)
+					{
+						template_source_file_contents.replace(index, 5, origin_file_contents.substr(first, last - first));
+					}
+				}
+
+				destination_file << template_source_file_contents;
+
+				template_source_file.close();
+				destination_file.close();
+				origin_file.close();
 			}
-
-			destination_file << template_source_file_contents;
-
-			template_source_file.close();
-			destination_file.close();
-			origin_file.close();
 		}
 	}
 }
@@ -74,7 +95,8 @@ int main() {
 	string 
 		template_file_path,
 		pages_file_path,
-		output_file_path;
+		output_file_path,
+		target_extension;
 
 	char file_line[MAX_LENGTH];
 
@@ -88,6 +110,7 @@ int main() {
 		read_line(config_file, file_line, template_file_path);
 		read_line(config_file, file_line, pages_file_path);
 		read_line(config_file, file_line, output_file_path);
+		read_line(config_file, file_line, target_extension);
 
 		if (fs::is_regular_file(template_file_path))
 		{ output("template found!"); }
@@ -104,8 +127,10 @@ int main() {
 		else
 		{ output(pages_file_path + " is not a valid directory!"); valid_config = false; }
 
+		output("The target extension is " + target_extension);
+
 		if (valid_config)
-		{ manage_directory(template_file_path, pages_file_path, output_file_path); }
+		{ manage_directory(template_file_path, pages_file_path, output_file_path, target_extension); }
 		
 	}
 	else
@@ -113,7 +138,7 @@ int main() {
 		ofstream new_config_file(config_file_path);
 		output("config file failed to open!");
 		output("creating a config file!");
-		new_config_file << "template=\npages=\noutput=";
+		new_config_file << "template=\npages=\noutput=\ntarget-extension=\".txt\"";
 		output("config file created!");
 	}
 
