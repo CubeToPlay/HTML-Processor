@@ -9,6 +9,6 @@ Setup
 
 Using The Program
 - Set the value you want to replace in the template file inside @{}@
-  Ex: @{replacement_value}@
+* Ex: @{replacement_value}@
 - The source file that is read from should becontained in @value{}@value
-  Ex: @replacment_value{ any value }@replacment_value
+* Ex: @replacment_value{ any value }@replacment_value
