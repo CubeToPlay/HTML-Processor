@@ -8,7 +8,5 @@ Setup
 5. The "target-extension" in config.cfg is the file extension of the source files you want to read from. 
 
 Using The Program
-- Set the value you want to replace in the template file inside @{}@
-- Example: @{replacement_value}@
-- The source file that is read from should becontained in @value{}@value
-- Example: @replacment_value{ any value }@replacment_value
+- To set the value you want to be replace, you would write in the template file, @{replacement_value}@
+- To set the "code" to replace "replacment_value", you would write in the source file @replacment_value{code}@replacment_value
