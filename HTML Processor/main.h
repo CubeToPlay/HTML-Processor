@@ -1,4 +1,4 @@
-//@title
+//@{title}@
 
 #pragma once
 #pragma warning(disable : 4996)
@@ -11,10 +11,12 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <sstream>
+#include <vector>
 
 #define MAX_LENGTH 256
 
 using namespace std;
 namespace fs = std::filesystem;
 
-//@body
+//@{body}@
+//@{random}@

@@ -28,52 +28,72 @@ void manage_directory(string& file_template, string& container, string& output_l
 		if (fs::is_regular_file(origin_file_entry.path()))
 		{
 			string origin_file_path = origin_file_entry.path().string();
+			string origin_file_contents, template_source_file_contents, fill_target, fill_value;
+			stringstream buffer;
+			vector<string> fill_variables;
+			int
+				begin_index = origin_file_path.find_last_of("\\") + 1,
+				end_index = origin_file_path.find(extension),
+				fill_index;
 
-			int first = origin_file_path.find_last_of("\\") + 1;
-			int last = origin_file_path.find(extension);
-
-			if (last != -1)
+			if (end_index != -1)
 			{
-				fs::path output_path = fs::path(output_location) / (origin_file_path.substr(first, last - first) + ".html");
+				fs::path output_path = fs::path(output_location) / (origin_file_path.substr(begin_index, end_index - begin_index) + ".html");
 				std::cout << output_path << std::endl;
 
 				ifstream  template_source_file(file_template, std::ios::binary);
 				ofstream  destination_file(output_path, std::ios::binary);
-
 				fstream origin_file(origin_file_path);
 
-				stringstream buffer;
 				buffer << origin_file.rdbuf();
-				string origin_file_contents = buffer.str();
+				origin_file_contents = buffer.str();
 
 				buffer.str("");
+
 				buffer << template_source_file.rdbuf();
+				template_source_file_contents = buffer.str();
 
-				string template_source_file_contents = buffer.str();
-
-				int index;
-
-				first = origin_file_contents.find("@title{") + 7;
-				last = origin_file_contents.find("}@title");
-				if (first != -1 && last != -1)
+				while (end_index != -1 && begin_index != -1)
 				{
-					index = template_source_file_contents.find("@title");
-					if (index != -1)
+					begin_index = template_source_file_contents.find("@{") + 2;
+					end_index = template_source_file_contents.find("}@");
+
+					if (end_index != -1 && begin_index != -1)
 					{
-						template_source_file_contents.replace(index, 6, origin_file_contents.substr(first, last - first));
+						fill_target = "@" + template_source_file_contents.substr(begin_index, end_index - begin_index);
+
+						fill_variables.push_back(fill_target);
+
+						begin_index -= 2;
+
+						template_source_file_contents.replace(begin_index, (end_index - begin_index) + 2, fill_target);
 					}
 				}
 
-				first = origin_file_contents.find("@body{") + 6;
-				last = origin_file_contents.find("}@body");
-				if (first != -1 && last != -1)
+				//cout << fill_variables.size() << endl;
+
+				for (int i{ 0 }; i < fill_variables.size(); i++)
 				{
-					index = template_source_file_contents.find("@body");
-					if (index != -1)
+					fill_target = fill_variables[i];
+
+					begin_index = origin_file_contents.find(fill_target + "{") + fill_target.length() + 1;
+					end_index = origin_file_contents.find("}" + fill_target);
+
+					fill_index = template_source_file_contents.find(fill_target);
+					if (begin_index != -1 && end_index != -1)
 					{
-						template_source_file_contents.replace(index, 5, origin_file_contents.substr(first, last - first));
+						output(fill_target);
+						fill_value = origin_file_contents.substr(begin_index, end_index - begin_index);
 					}
+					else
+						fill_value = "";
+
+					if (fill_index != -1)
+						template_source_file_contents.replace(fill_index, fill_target.length(), fill_value);
+
 				}
+
+				//cout << template_source_file_contents << endl;
 
 				destination_file << template_source_file_contents;
 
